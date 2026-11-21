@@ -1,0 +1,28 @@
+{
+  "name": "ptcli",
+  "version": "0.1.0",
+  "description": "Project template CLI: scaffold, restore, and maintain AI-ready project workspaces",
+  "type": "module",
+  "bin": {
+    "ptcli": "./bin/ptcli.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "assets/template",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "keywords": [
+    "cli",
+    "scaffold",
+    "project-template",
+    "restore"
+  ],
+  "license": "MIT"
+}

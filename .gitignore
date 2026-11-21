@@ -1,0 +1,7 @@
+node_modules
+.DS_Store
+*.log
+.ptcli/backup/
+.env
+.env.*
+*.tgz
