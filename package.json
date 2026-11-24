@@ -1,6 +1,6 @@
 {
   "name": "@funaryou/ptcli",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Project template CLI: scaffold, restore, and maintain AI-ready project workspaces",
   "type": "module",
   "bin": {
