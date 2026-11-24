@@ -1,10 +1,10 @@
 {
-  "name": "ptcli",
+  "name": "@funaryou/ptcli",
   "version": "0.1.0",
   "description": "Project template CLI: scaffold, restore, and maintain AI-ready project workspaces",
   "type": "module",
   "bin": {
-    "ptcli": "./bin/ptcli.js"
+    "ptcli": "bin/ptcli.js"
   },
   "files": [
     "bin",
@@ -16,7 +16,8 @@
     "node": ">=18"
   },
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "prepublishOnly": "node --test test/package.test.js"
   },
   "keywords": [
     "cli",
@@ -24,5 +25,13 @@
     "project-template",
     "restore"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/funaryou/ptcli.git"
+  }
 }

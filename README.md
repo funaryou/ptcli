@@ -2,16 +2,61 @@
 
 プロジェクトテンプレートの作成・復元・保守を行うCLIです。Node.js 18以上で動作し、依存パッケージはありません。
 
-## ローカルで使う
+## インストール
 
-テンプレートは `assets/template/` に同梱しています。npm公開はまだ行っていません。現在は、このディレクトリで次を実行してローカルのコマンドを登録してください。
+npmパッケージ名は `@funaryou/ptcli`、インストール後の実行コマンドは `ptcli` です。
+
+Node.js 18以上とnpmが必要です。Gitによる初期化・復元を使う場合はGitも必要です。
+
+### npmレジストリから
+
+次のコマンドでインストールします。
+
+```bash
+npm install --global @funaryou/ptcli
+ptcli --version
+ptcli --help
+```
+
+インストールせずに実行する場合は次を使います。
+
+```bash
+npx @funaryou/ptcli new my-app
+```
+
+### 配布アーカイブから使う
+
+配布されたアーカイブを保存したディレクトリで実行します。
+
+```bash
+npm install --global ./funaryou-ptcli-0.2.0.tgz
+ptcli --version
+```
+
+同梱テンプレートを使うため、別のテンプレートリポジトリの取得は不要です。
+
+### 開発用のソースから使う
+
+この `ptcli` ディレクトリで実行します。
 
 ```bash
 npm link
 ptcli --help
 ```
 
-登録せずに使う場合は `node /path/to/ptcli/bin/ptcli.js <command>` で実行できます。
+登録せずに使う場合は、このディレクトリで `node bin/ptcli.js --help` を実行します。
+
+## 新規プロジェクトの作成
+
+作成先の親ディレクトリで実行します。
+
+```bash
+ptcli new my-app --yes --agent codex --no-git
+cd my-app
+ptcli doctor
+```
+
+`--no-git` はGit初期化と初回コミットを省略します。コミット対象を確認してからGit管理を開始してください。アプリの実装先は `projects/main/` です。
 
 ## リポジトリの構成
 
@@ -218,9 +263,76 @@ node bin/ptcli.js --help
 
 旧 `project-template/` へのコピーや同期は不要です。テンプレートとCLIの変更を同じリポジトリで管理します。
 
+## CI/CD（自動テストとnpm公開）
+
+GitHub Actionsで次を実行します。
+
+| ワークフロー | 起動条件 | 処理 |
+|---------------|----------|------|
+| `.github/workflows/ci.yml` | PR、mainへのpush | Node.js 18・24で全テストを実行 |
+| `.github/workflows/publish.yml` | `v*` タグのpush | バージョンと公開先を検証 → 全テスト → 配布内容の確認 → npm公開 |
+
+依存パッケージとビルド工程がないため、`npm ci` とビルドは実行しません。公開はNode.js 24とnpmのTrusted Publishing（GitHub Actionsの実行元を確認する認証方式）を使い、`NPM_TOKEN` は不要です。mainへのpushだけでは公開しません。タグと `package.json` のバージョンが違う場合、プレリリース版の場合、テストが失敗した場合は公開しません。
+
+### 初回のnpm側設定
+
+1. このワークフローを `funaryou/ptcli` のGitHubリポジトリへpushします。
+2. npmの `@funaryou/ptcli` のSettings → Trusted publishingでGitHub Actionsを追加します。パッケージがまだ存在しない場合は、下記の手動公開で初回版を作成してから設定します。
+3. 次の値を登録し、直接公開する `npm publish` を許可します。
+
+| 項目 | 値 |
+|------|----|
+| Organization or user | `funaryou` |
+| Repository | `ptcli` |
+| Workflow filename | `publish.yml`（パスは含めません） |
+| Environment | 空欄 |
+| Allowed actions | `npm publish` を許可 |
+
+新しいTrusted Publisher設定は、作成から2日以内に最初の公開を成功させる必要があります。設定保存だけでは認証の成功は確認できません。
+
+公式手順: [npm Trusted Publishing](https://docs.npmjs.com/trusted-publishers/)
+
+### 通常のリリース
+
+公開したい変更と上記の公開設定をコミット済みで、作業ツリーが空の状態で実行します。
+
+```bash
+# 機能追加の場合。バージョン更新・コミット・タグ作成を行います
+npm version minor
+
+# mainと今回のリリースタグをまとめて送信します
+# バージョンに合わせてタグ名を指定します
+git push --atomic origin main v0.2.0
+```
+
+修正のみなら `npm version patch` を使い、pushするタグも生成されたバージョンに合わせます。GitHub Actionsの「Publish to npm」で完了を確認してください。既に公開された同じバージョンは再公開できません。失敗原因を直した結果、配布内容が変わる場合は新しいバージョンで公開します。
+
+公開後、利用者は次で最新版へ更新できます。
+
+```bash
+npm install --global @funaryou/ptcli@latest
+ptcli --version
+```
+
+npm側のTrusted Publisher設定、GitHub上のCI実行、実際の自動公開はローカルのテストでは確認できません。
+
+## npmへの公開手順
+
+このディレクトリで実行します。npmへの認証はGitHubの認証とは別です。使用するnpmアカウントを確認してから公開してください。
+
+```bash
+npm login
+npm whoami
+npm publish --dry-run
+npm publish
+```
+
+`prepublishOnly` で、パッケージを実際にグローバルインストールし、新規作成・AI設定追加が動作するテストを実行します。公開先はnpmの公開レジストリ、公開範囲はpublicです。認証トークンはリポジトリに保存しないでください。
+
+公開にはnpmアカウントの2段階認証（2FA）が必要です。公開後は `npm view @funaryou/ptcli version` と、別の環境での `npm install --global @funaryou/ptcli` で確認します。
+
 ## 未対応
 
 - `migrate`（既存プロジェクトのv2移行）
 - `update-doc`（docテンプレートの同期）
 - `backup`（アーカイブ退避）
-- npmへの公開（パッケージ名の利用可否、公開先・公開範囲は未確定）

@@ -1,0 +1,44 @@
+name: Publish to npm
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: npm-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '24'
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      - name: Validate release tag and package
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import fs from 'node:fs';
+          const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+          assert.equal(pkg.name, '@funaryou/ptcli', 'Unexpected package name');
+          assert.match(pkg.version, /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/, 'Only stable versions can be published');
+          assert.equal(process.env.GITHUB_REF_NAME, `v${pkg.version}`, 'Tag must match package.json version');
+          assert.equal(pkg.repository?.url, 'git+https://github.com/funaryou/ptcli.git', 'Repository URL must match trusted publisher');
+          NODE
+      - run: npm test
+      - run: npm pack --dry-run
+      - name: Publish with npm trusted publishing
+        run: npm publish --access public

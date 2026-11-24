@@ -11,14 +11,16 @@ const packageRoot = fileURLToPath(new URL('..', import.meta.url));
 test('packed CLI creates a project and adds an agent without a sibling template', (t) => {
   const work = fs.mkdtempSync(path.join(os.tmpdir(), 'ptcli-package-test-'));
   t.after(() => fs.rmSync(work, { recursive: true, force: true }));
-  const packed = JSON.parse(execFileSync('npm', ['pack', '--json', '--ignore-scripts', '--pack-destination', work], {
+  const packed = JSON.parse(execFileSync('npm', ['pack', '--json', '--ignore-scripts', '--dry-run=false', '--pack-destination', work], {
     cwd: packageRoot, encoding: 'utf8', stdio: 'pipe',
   }))[0];
   assert.ok(packed.files.some(({ path: name }) => name === 'assets/template/doc/rules/md-rule.md'));
   assert.ok(packed.files.some(({ path: name }) => name === 'assets/template/skills/new-skill/SKILL.md'));
   assert.ok(packed.files.every(({ path: name }) => !name.split('/').includes('.git')));
-  execFileSync('tar', ['-xzf', path.join(work, packed.filename), '-C', work]);
-  const cli = path.join(work, 'package', 'bin', 'ptcli.js');
+  const prefix = path.join(work, 'installed');
+  execFileSync('npm', ['install', '--global', '--dry-run=false', '--prefix', prefix, '--ignore-scripts', '--no-audit', '--no-fund', path.join(work, packed.filename)], { stdio: 'pipe' });
+  const cli = path.join(prefix, 'bin', 'ptcli');
+  assert.equal(execFileSync(cli, ['--version'], { encoding: 'utf8' }).trim(), packed.version);
   const run = (args) => execFileSync(process.execPath, [cli, ...args], {
     cwd: work, encoding: 'utf8', stdio: 'pipe',
     env: { ...process.env, PTCLI_TEMPLATE: '', PTCLI_SKILLS: '' },

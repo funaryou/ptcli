@@ -60,7 +60,7 @@ ptcli new 'recreated-project' --yes --app ${quote(manifest.apps[0].name || 'main
 ## 保存と前提
 
 - CLIにはNode.js 18以上、cloneにはGitとリモートへのアクセス権限が必要です。
-- npm公開は未確定です。公開前はCLIのソースから \`npm link\` で \`ptcli\` を登録してください。Gitだけの復元手順にはCLIは不要です。
+- CLIは \`npm install --global @funaryou/ptcli\` でインストールします。Gitだけの復元手順にはCLIは不要です。
 - このファイルをコミット・pushし、リモートURLと復元手順をPC外にも保管してください。
 - 未コミット・未pushの変更、無視されたファイル、リモート自体の消失は復元対象外です。
 `;
