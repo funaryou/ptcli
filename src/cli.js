@@ -6,6 +6,7 @@ import { runDoctor } from './commands/doctor.js';
 import { runAddAgent } from './commands/add-agent.js';
 import { runRestore } from './commands/restore.js';
 import { runRestoreDoc } from './commands/restore-doc.js';
+import { runAddDoc } from './commands/add-doc.js';
 
 const pkg = JSON.parse(fs.readFileSync(path.join(PACKAGE_ROOT, 'package.json'), 'utf8'));
 
@@ -19,6 +20,7 @@ ptcli ${pkg.version} — プロジェクトテンプレートCLI
   new [dir]              プロジェクトを作成する
   doctor [dir]           構造とmanifestを検証する
   add-agent [dir]        AIエージェント設定を後付けする
+  add-doc [dir]          doc/ と demo/ を追加する（既存ファイルは保持）
   restore <url> [dir]    Gitリモートから復元する
   restore-doc [dir]      originからdoc/RESTORE.mdを更新する
 
@@ -34,6 +36,10 @@ new:
   --remote <url>         GitリモートURL
   --no-git               git init をスキップ
   --yes                  既定値で非対話実行
+
+add-doc:
+  --no-demo              doc/ のみ追加
+  --agent <name>         AIエージェントのスキルも追加（省略時は追加なし）
 
 add-agent:
   --agent <name>         追加するエージェント
@@ -102,6 +108,8 @@ export async function main(argv) {
       return runDoctor(positional, flags);
     case 'add-agent':
       return runAddAgent(positional, flags);
+    case 'add-doc':
+      return runAddDoc(positional, flags);
     case 'restore-doc':
       return runRestoreDoc(positional);
     case 'restore':

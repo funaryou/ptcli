@@ -30,4 +30,10 @@ test('packed CLI creates a project and adds an agent without a sibling template'
   run(['add-agent', 'app', '--agent', 'claude-code']);
   assert.ok(fs.existsSync(path.join(root, '.claude', 'skills', 'new-skill', 'SKILL.md')));
   assert.match(run(['doctor', 'app']), /構造に問題はありません/);
+  run(['add-doc', 'docs-only', '--agent', 'opencode']);
+  const docs = path.join(work, 'docs-only');
+  assert.ok(fs.existsSync(path.join(docs, 'doc', 'rules', 'md-rule.md')));
+  assert.ok(fs.existsSync(path.join(docs, 'demo', '.gitkeep')));
+  assert.ok(fs.existsSync(path.join(docs, '.opencode', 'skills', 'new-skill', 'SKILL.md')));
+  assert.ok(!fs.existsSync(path.join(docs, '.ptcli.json')));
 });
