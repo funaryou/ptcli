@@ -37,9 +37,11 @@ ptcli --version
 
 ### 開発用のソースから使う
 
-この `ptcli` ディレクトリで実行します。
+初回clone時はsubmoduleも取得します。既にclone済みなら、`ptcli` のルートで `git submodule update --init --recursive` を実行してください。
 
 ```bash
+git clone --recurse-submodules https://github.com/funaryou/ptcli.git
+cd ptcli
 npm link
 ptcli --help
 ```
@@ -62,7 +64,7 @@ ptcli doctor
 
 ```text
 ptcli/
-├── assets/template/
+├── assets/template/  # project-templateリポジトリのsubmodule
 │   ├── doc/       # 配布する文書テンプレート
 │   └── skills/    # 配布するエージェント用スキル
 ├── bin/ptcli.js
@@ -70,7 +72,7 @@ ptcli/
 └── test/
 ```
 
-CLIとテンプレートは同じリポジトリで管理します。テンプレートの編集先は `assets/template/` です。開発時もパッケージ利用時も同じ原本を使い、隣接する別リポジトリには依存しません。
+CLIはこのリポジトリ、テンプレートの原本は [project-template](https://github.com/funaryou/project-template) の `doc/` と `skills/` で管理します。`assets/template/` はその特定コミットを固定するGit submodule（別リポジトリのコミットを参照する仕組み）です。開発時にはsubmoduleの取得が必要ですが、npmパッケージには文書・スキルの実ファイルを同梱するため、利用者によるGit操作や隣接リポジトリの配置は不要です。
 
 ## コマンド一覧
 
@@ -256,12 +258,31 @@ node bin/ptcli.js --help
 | 変更内容 | 編集先 | 確認方法 |
 |----------|--------|----------|
 | CLIのコマンド・処理 | `src/`、`bin/` | 対応する `test/` のテストと `npm test` で確認します |
-| 配布する文書・スキル | `assets/template/doc/`、`assets/template/skills/` | 生成物を確認し、`npm test` でパッケージ単独での動作も確認します |
+| 配布する文書・スキル | `project-template` リポジトリの `doc/`、`skills/` | submoduleの参照を更新し、`npm test` でnpm同梱内容と動作を確認します |
 | 利用手順・対応状況 | この `README.md` | コマンド名、オプション、実装状況をコードと照合します |
 
 `assets/template/` の変更は新しく生成するプロジェクトに反映されます。既存の生成済みプロジェクトへ自動同期はしません。`add-agent --force` はスキルの更新に使えますが、文書全体を同期する `update-doc` は未実装です。
 
-旧 `project-template/` へのコピーや同期は不要です。テンプレートとCLIの変更を同じリポジトリで管理します。
+### テンプレートの変更と取り込み
+
+1. `project-template` の作業コピーで `doc/` または `skills/` を編集し、変更をコミットして `master` へpushします。
+2. `ptcli` のルートで、submoduleを原本の最新コミットに更新します。
+
+```bash
+git submodule update --init --remote -- assets/template
+git diff --submodule=log
+npm test
+git add assets/template
+git commit -m "chore: update bundled template"
+```
+
+3. CLIのバージョンを更新し、mainとバージョンタグをpushしてnpmへ公開します。
+
+通常のclone・CIは記録済みのコミットを取得します。`--remote` はテンプレート更新を取り込むときだけ使用してください。原本へのpushだけでCLIの参照やnpmの公開内容が自動更新されることはありません。
+
+`assets/template` 内で直接編集した場合も、テンプレート側のコミットを先に原本リポジトリへpushし、続いてCLI側で参照コミットを記録します。原本へpushされていないコミットを参照すると、他の環境やCIで取得できません。
+
+submoduleを初期化していないGitHubのソースZIPなどではテンプレートを利用できません。ソースから開発する場合は `git clone --recurse-submodules`、通常の利用にはnpmパッケージを使ってください。
 
 ## CI/CD（自動テストとnpm公開）
 
@@ -271,6 +292,8 @@ GitHub Actionsで次を実行します。
 |---------------|----------|------|
 | `.github/workflows/ci.yml` | PR、mainへのpush | Node.js 18・24で全テストを実行 |
 | `.github/workflows/publish.yml` | `v*` タグのpush | バージョンと公開先を検証 → 全テスト → 配布内容の確認 → npm公開 |
+
+CI・公開ワークフローはsubmoduleの固定コミットも取得します。テンプレートの `doc/` と `skills/` を配布対象とし、Git管理情報や原本側の `project/` は同梱しません。原本ルートのREADMEはnpmの仕様により同梱されます。
 
 依存パッケージとビルド工程がないため、`npm ci` とビルドは実行しません。公開はNode.js 24とnpmのTrusted Publishing（GitHub Actionsの実行元を確認する認証方式）を使い、`NPM_TOKEN` は不要です。mainへのpushだけでは公開しません。タグと `package.json` のバージョンが違う場合、プレリリース版の場合、テストが失敗した場合は公開しません。
 

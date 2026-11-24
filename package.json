@@ -9,7 +9,8 @@
   "files": [
     "bin",
     "src",
-    "assets/template",
+    "assets/template/doc",
+    "assets/template/skills",
     "README.md"
   ],
   "engines": {

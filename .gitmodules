@@ -1,0 +1,4 @@
+[submodule "assets/template"]
+	path = assets/template
+	url = https://github.com/funaryou/project-template.git
+	branch = master
